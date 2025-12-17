@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { Chart, registerables } from "chart.js";
 import type { Chart as ChartType, ChartOptions, ChartData } from "chart.js";
@@ -29,7 +28,6 @@ function score(metric: MetricName, y: number[], yhat: number[]): number {
 }
 
 /* ========== 模拟周度数据（2 年，104 周） ========== */
-
 /* ========== 源数据生成（周度 2 年，三种场景） ========== */
 type DataProfile = "flat" | "trend" | "season_trend";
 /**
@@ -80,8 +78,9 @@ function calcSMA(values: number[], window: number): number[] {
   for (let t = 0; t < n; t++) {
     sum += values[t];
     if (t - window >= 0) sum -= values[t - window];
-    const count = Math.min(t + 1, window);
-    out[t] = sum / count;
+    if (t >= window - 1) {
+      out[t] = sum / window; // 只有满窗时才写值
+    }
   }
   return out;
 }
@@ -315,7 +314,7 @@ export default function App(): JSX.Element {
 
     datasets.push({
         metaKey: KEY_RAW,
-        label: "原始销量（周）",
+        label: "Actual Sales (weekly)",
         data: rawHist,
         hidden: !!hiddenMap[KEY_RAW],
         borderColor: "#808080",
@@ -334,7 +333,7 @@ export default function App(): JSX.Element {
     datasets.push(
       {
         metaKey: KEY_SMA_FIT,
-        label: `SMA 拟合（W=${W}）`,
+        label: `SMA Fit (W=${W})`,
         data: smaHist,
         hidden: !!hiddenMap[KEY_SMA_FIT],
         borderColor: cSMA,
@@ -345,7 +344,7 @@ export default function App(): JSX.Element {
       } as any,
       {
         metaKey: KEY_HW_FIT,
-        label: `HW(A) 拟合（α=${alphaHW.toFixed(2)}, β=${betaHW.toFixed(2)}, γ=${gammaHW.toFixed(2)}, s=${seasonLen}）`,
+        label: `HW(A) Fit (α=${alphaHW.toFixed(2)}, β=${betaHW.toFixed(2)}, γ=${gammaHW.toFixed(2)}, s=${seasonLen})`,
         data: hwHist,
         hidden: !!hiddenMap[KEY_HW_FIT],
         borderColor: cHW,
@@ -360,7 +359,7 @@ export default function App(): JSX.Element {
     datasets.push(
       {
         metaKey: KEY_SMA_FCST,
-        label: `SMA 预测（H=${H}）`,
+        label: `SMA Forecast (H=${H})`,
         data: smaPred,
         hidden: !!hiddenMap[KEY_SMA_FCST],
         borderColor: cSMA,
@@ -372,7 +371,7 @@ export default function App(): JSX.Element {
       } as any,
       {
         metaKey: KEY_HW_FCST,
-        label: `HW(A) 预测（H=${H}）`,
+        label: `HW(A) Forecast (H=${H})`,
         data: hwPred,
         hidden: !!hiddenMap[KEY_HW_FCST],
         borderColor: cHW,
@@ -430,8 +429,8 @@ export default function App(): JSX.Element {
         },
       },
       scales: {
-        x: { title: { display: true, text: "周日期" }, ticks: { maxRotation: 0, autoSkip: true } },
-        y: { title: { display: true, text: "销量" } },
+        x: { title: { display: false, text: "Week Date" }, ticks: { maxRotation: 0, autoSkip: true } },
+        y: { title: { display: true, text: "Sales" } },
       },
     };
 
@@ -494,7 +493,7 @@ export default function App(): JSX.Element {
           <label>Forecasting weeks（H）：<b>{H}</b></label><br />
           <input type="range" min={4} max={26} step={1} value={H} onChange={(e) => setH(parseInt(e.target.value, 10))} />
         </div>
-        <div style={{ minWidth: 240 }}>
+        <div style={{ minWidth: 220 }}>
         </div>
       </div>
 
